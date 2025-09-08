@@ -1,0 +1,1 @@
+"C:\Program Files\LOVE\love.exe" "C:\Users\Colby\Desktop\Love2dTestGame\the game folder"
