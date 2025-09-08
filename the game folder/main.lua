@@ -8,10 +8,12 @@ function love.load()
     canvas = love.graphics.newCanvas(dimX, dimY)
     mainMenuCanvas = love.graphics.newCanvas(dimX, dimY)
     settingsCanvas = love.graphics.newCanvas(dimX, dimY)
+    pauseMenu = love.graphics.newCanvas(dimX, dimY)
     -- init states
     gameState = {}
     mainMenuState = {}
     settingsState = {}
+    pauseMenuState = {}
     
     resolutions = {
         [0] = function()
@@ -36,12 +38,13 @@ function love.load()
     gameState.currTarget = {}
     gameState.score = 0
     gameState.timer = 0
-    gameState.currentScreen = "menu"
+    gameState.currentScreen = "pause"
     gameState.currentCanvas = mainMenuCanvas
 
     -- set up scenes
     setUpMainMenu()
     setUpSettings()
+    setUpPauseMenu()
 
     love.graphics.setCanvas(canvas)
     local r, g, b = love.math.colorFromBytes(25, 59, 138)
@@ -63,12 +66,14 @@ function love.load()
         ["settings"] = function(dt)
             updateSettingsState(dt)
         end,
+        ["pause"] = function(dt)
+        end
     }
 
     canvasMap = {
         ["game"] = function()
             love.graphics.draw(canvas)
-            love.graphics.draw(plainText, 312, 50)
+            drawCenteredText(0, dimY * .02, dimX, dimY * .05 / 8, plainText)
         end,
         ["menu"] = function()
             love.graphics.draw(mainMenuCanvas)
@@ -77,6 +82,11 @@ function love.load()
             love.graphics.draw(settingsCanvas)
             drawCenteredText(settingsState.resolutionObject.x, settingsState.resolutionObject.y, settingsState.resolutionObject.width, settingsState.resolutionObject.height / 8, resolutionText)
         end,
+        ["pause"] = function()
+            love.graphics.draw(canvas)
+            drawCenteredText(0, dimY * .02, dimX, dimY * .05 / 8, plainText)
+            love.graphics.draw(pauseMenu)
+        end
     }
 end
 
@@ -153,6 +163,27 @@ function setUpSettings()
     local backText = love.graphics.newText(font, {{.4, .4, .4}, "Back to Main Menu"})
     drawCenteredText(settingsState.backObject.x, settingsState.backObject.y, settingsState.backObject.width, settingsState.backObject.height / 8, backText)
     love.graphics.setCanvas()
+end
+
+function setUpPauseMenu()
+    love.graphics.setCanvas(pauseMenu)
+    pauseMenuState.container = {}
+    pauseMenuState.container.x = dimX / 2
+    pauseMenuState.container.y = dimY / 2
+    pauseMenuState.container.width = dimX * .25
+    pauseMenuState.container.height = dimX * .3
+    pauseMenuState.container.body = love.physics.newBody(world, pauseMenuState.container.x, pauseMenuState.container.y, "static")
+    pauseMenuState.container.shape = love.physics.newRectangleShape(0, 0, pauseMenuState.container.width, pauseMenuState.container.height)
+    pauseMenuState.container.fixture = love.physics.newFixture(pauseMenuState.container.body, pauseMenuState.container.shape, 1)
+
+    love.graphics.setColor(.9, .9, .9)
+    love.graphics.polygon("fill", pauseMenuState.container.body:getWorldPoints(pauseMenuState.container.shape:getPoints()))
+    love.graphics.setColor(0, 0, 0, 1) -- set color to black for line only
+    love.graphics.setLineWidth(2) -- optional: make the outline more visible
+    love.graphics.polygon("line", pauseMenuState.container.body:getWorldPoints(pauseMenuState.container.shape:getPoints()))
+    love.graphics.setColor(1, 1, 1, 1) -- reset color to white for text
+    love.graphics.setCanvas()
+
 end
 
 function love.update(dt) 
@@ -243,6 +274,12 @@ function handleClickSettings()
         resolutionText:set({{.3, .3, .3}, combinedString})
         love.window.updateMode(dimX, dimY)
 
+        canvas = love.graphics.newCanvas(dimX, dimY)
+        mainMenuCanvas = love.graphics.newCanvas(dimX, dimY)
+        settingsCanvas = love.graphics.newCanvas(dimX, dimY)
+        gameState.prevTargetClicked = true
+        gameState.timer = 0
+
         setUpMainMenu()
         setUpSettings()
     end
@@ -255,6 +292,9 @@ function handleClickSettings()
 end
 
 function handleKeyPress(key)
+    if key == "escape" and gameState.CurrentScreen == "game" then
+        gameState.currentScreen = "pause"
+    end
     if key == "q" then
         gameState.currentScreen = "menu"
     end
@@ -282,9 +322,9 @@ end
 
 --- CORE GAME ---
 function createRandomCircle()
-    local randX = love.math.random(100, 700)
-    local randY = love.math.random(100, 500)
-    local randRadius = love.math.random(5, 20)
+    local randX = love.math.random(100, dimX - 100)
+    local randY = love.math.random(100, dimY - 100)
+    local randRadius = love.math.random(5, dimX * .025)
 
     -- Set up physics body
     local targetBody = love.physics.newBody(world, randX, randY, "static")
@@ -332,9 +372,9 @@ function handleTimer()
 end
 
 function getScore(radius)
-    if radius < 10 then
+    if radius < dimX * .00625 * 2 then
         return 20
-    elseif radius < 15 then
+    elseif radius < dimX * .00625 * 3 then
         return 15
     else
         return 10
