@@ -41,7 +41,7 @@ function love.load()
     gameState.score = 0
     gameState.timer = 0
     gameState.currentScreen = "menu"
-    gameState.currentCanvas = mainMenuCanvas
+    gameState.previousScreen = ""
 
     -- set up scenes
     setUpMainMenu()
@@ -51,10 +51,10 @@ function love.load()
     love.graphics.setCanvas(canvas)
     local r, g, b = love.math.colorFromBytes(25, 59, 138)
     love.graphics.setBackgroundColor(r, g, b)
-    local font = love.graphics.newFont(24)
+    local font = love.graphics.newFont((settingsState.resolution + 1) * 12)
     plainText = love.graphics.newText(font, {{1, 1, 1}, "Your Score: ", gameState.score})
     local combinedString = "Resolution: " .. dimX .. " x " .. dimY
-    local resFont = love.graphics.newFont()
+    local resFont = love.graphics.newFont((settingsState.resolution + 1) * 12)
     resolutionText = love.graphics.newText(resFont, {{.3, .3, .3}, combinedString})
     love.graphics.setCanvas()
 
@@ -128,7 +128,7 @@ function setUpMainMenu()
     love.graphics.polygon("fill", mainMenuState.settingsObject.body:getWorldPoints(mainMenuState.settingsObject.shape:getPoints()))
     love.graphics.polygon("fill", mainMenuState.exitObject.body:getWorldPoints(mainMenuState.exitObject.shape:getPoints()))
 
-    local font = love.graphics.getFont()
+    local font = love.graphics.newFont((settingsState.resolution + 1) * 12)
     local playGameText = love.graphics.newText(font, {{.4, .4, .4}, "Play Game"})
     local settingsText = love.graphics.newText(font, {{.4, .4, .4}, "Settings"})
     local exitText = love.graphics.newText(font, {{.4, .4, .4}, "Exit"})
@@ -162,8 +162,8 @@ function setUpSettings()
     love.graphics.polygon("fill", settingsState.resolutionObject.body:getWorldPoints(settingsState.resolutionObject.shape:getPoints()))
     love.graphics.polygon("fill", settingsState.backObject.body:getWorldPoints(settingsState.backObject.shape:getPoints()))
 
-    local font = love.graphics.getFont()
-    local backText = love.graphics.newText(font, {{.4, .4, .4}, "Back to Main Menu"})
+    local font = love.graphics.newFont((settingsState.resolution + 1) * 12)
+    local backText = love.graphics.newText(font, {{.4, .4, .4}, "Back"})
     drawCenteredText(settingsState.backObject.x, settingsState.backObject.y, settingsState.backObject.width, settingsState.backObject.height / 8, backText)
     love.graphics.setCanvas()
 end
@@ -315,12 +315,14 @@ function handleClickMenu()
     if isInsideGame then
         gameState.currentCanvas = canvas
         gameState.currentScreen = "game"
+        gameState.previousScreen = "menu"
     end
 
     local isInsideSettings = mainMenuState.settingsObject.fixture:testPoint(mouseX, mouseY)
     if isInsideSettings then
         gameState.currentCanvas = settingsCanvas
         gameState.currentScreen = "settings"
+        gameState.previousScreen = "menu"
     end
 
     local isInsideExit = mainMenuState.exitObject.fixture:testPoint(mouseX, mouseY)
@@ -339,6 +341,8 @@ function handleClickSettings()
         local setRes = resolutions[res]
         setRes()
         local combinedString = "Resolution: " .. dimX .. " x " .. dimY
+        local font = love.graphics.newFont((settingsState.resolution + 1) * 12)
+        resolutionText:setFont(font)
         resolutionText:set({{.3, .3, .3}, combinedString})
         love.window.updateMode(dimX, dimY)
 
@@ -356,7 +360,8 @@ function handleClickSettings()
     local isInsideBack = settingsState.backObject.fixture:testPoint(mouseX,mouseY)
 
     if isInsideBack then
-        gameState.currentScreen = "menu"
+        gameState.currentScreen = gameState.previousScreen
+        gameState.previousScreen = "settings"
     end
 end
 
@@ -365,18 +370,21 @@ function handleClickPause()
 
     if isResume then
         gameState.currentScreen = "game"
+        gameState.previousScreen = "pause"
     end
 
     local isSettings = pauseMenuState.settingsButton.fixture:testPoint(mouseX, mouseY)
 
     if isSettings then
         gameState.currentScreen = "settings"
+        gameState.previousScreen = "pause"
     end
 
     local isMenu = pauseMenuState.menuButton.fixture:testPoint(mouseX, mouseY)
 
     if isMenu then
         gameState.currentScreen = "menu"
+        gameState.previousScreen = "pause"
     end
 end
 
