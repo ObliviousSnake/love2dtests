@@ -31,14 +31,16 @@ function love.load()
     }
 
     settingsState.resolution = 2
+    mousePressed = false
+    mouseReleased = true
     settingsState.mouseReleased = true
     mainMenuState.mouseReleased = true
-    gameState.prevTargetClicked = true
     gameState.mouseReleased = true
+    gameState.prevTargetClicked = true
     gameState.currTarget = {}
     gameState.score = 0
     gameState.timer = 0
-    gameState.currentScreen = "pause"
+    gameState.currentScreen = "menu"
     gameState.currentCanvas = mainMenuCanvas
 
     -- set up scenes
@@ -67,6 +69,7 @@ function love.load()
             updateSettingsState(dt)
         end,
         ["pause"] = function(dt)
+            updatePauseState(dt)
         end
     }
 
@@ -167,20 +170,81 @@ end
 
 function setUpPauseMenu()
     love.graphics.setCanvas(pauseMenu)
+    -- container
     pauseMenuState.container = {}
     pauseMenuState.container.x = dimX / 2
     pauseMenuState.container.y = dimY / 2
     pauseMenuState.container.width = dimX * .25
-    pauseMenuState.container.height = dimX * .3
+    pauseMenuState.container.height = dimY * .5
     pauseMenuState.container.body = love.physics.newBody(world, pauseMenuState.container.x, pauseMenuState.container.y, "static")
     pauseMenuState.container.shape = love.physics.newRectangleShape(0, 0, pauseMenuState.container.width, pauseMenuState.container.height)
     pauseMenuState.container.fixture = love.physics.newFixture(pauseMenuState.container.body, pauseMenuState.container.shape, 1)
 
-    love.graphics.setColor(.9, .9, .9)
+    -- resume
+    pauseMenuState.resumeButton = {}
+    pauseMenuState.resumeButton.x = pauseMenuState.container.x
+    pauseMenuState.resumeButton.y = pauseMenuState.container.y - (dimY * .15)
+    pauseMenuState.resumeButton.width = pauseMenuState.container.width * .8
+    pauseMenuState.resumeButton.height = pauseMenuState.container.height * .2
+    pauseMenuState.resumeButton.body = love.physics.newBody(world, pauseMenuState.resumeButton.x, pauseMenuState.resumeButton.y, "static")
+    pauseMenuState.resumeButton.shape = love.physics.newRectangleShape(0, 0, pauseMenuState.resumeButton.width, pauseMenuState.resumeButton.height)
+    pauseMenuState.resumeButton.fixture = love.physics.newFixture(pauseMenuState.resumeButton.body, pauseMenuState.resumeButton.shape, 1)
+
+    -- settings
+    pauseMenuState.settingsButton = {}
+    pauseMenuState.settingsButton.x = pauseMenuState.container.x
+    pauseMenuState.settingsButton.y = pauseMenuState.container.y
+    pauseMenuState.settingsButton.width = pauseMenuState.container.width * .8
+    pauseMenuState.settingsButton.height = pauseMenuState.container.height * .2
+    pauseMenuState.settingsButton.body = love.physics.newBody(world, pauseMenuState.settingsButton.x, pauseMenuState.settingsButton.y, "static")
+    pauseMenuState.settingsButton.shape = love.physics.newRectangleShape(0, 0, pauseMenuState.settingsButton.width, pauseMenuState.settingsButton.height)
+    pauseMenuState.settingsButton.fixture = love.physics.newFixture(pauseMenuState.settingsButton.body, pauseMenuState.settingsButton.shape, 1)
+    
+    -- back to menu
+    pauseMenuState.menuButton = {}
+    pauseMenuState.menuButton.x = pauseMenuState.container.x
+    pauseMenuState.menuButton.y = pauseMenuState.container.y + (dimY * .15)
+    pauseMenuState.menuButton.width = pauseMenuState.container.width * .8
+    pauseMenuState.menuButton.height = pauseMenuState.container.height * .2
+    pauseMenuState.menuButton.body = love.physics.newBody(world, pauseMenuState.menuButton.x, pauseMenuState.menuButton.y, "static")
+    pauseMenuState.menuButton.shape = love.physics.newRectangleShape(0, 0, pauseMenuState.menuButton.width, pauseMenuState.menuButton.height)
+    pauseMenuState.menuButton.fixture = love.physics.newFixture(pauseMenuState.menuButton.body, pauseMenuState.menuButton.shape, 1)
+
+    love.graphics.setColor(.9, .9, .9, .8)
     love.graphics.polygon("fill", pauseMenuState.container.body:getWorldPoints(pauseMenuState.container.shape:getPoints()))
     love.graphics.setColor(0, 0, 0, 1) -- set color to black for line only
     love.graphics.setLineWidth(2) -- optional: make the outline more visible
     love.graphics.polygon("line", pauseMenuState.container.body:getWorldPoints(pauseMenuState.container.shape:getPoints()))
+
+    love.graphics.setColor(.9, .9, .9)
+    love.graphics.polygon("fill", pauseMenuState.resumeButton.body:getWorldPoints(pauseMenuState.resumeButton.shape:getPoints()))
+    love.graphics.setColor(0, 0, 0, 1) -- set color to black for line only
+    love.graphics.setLineWidth(2) -- optional: make the outline more visible
+    love.graphics.polygon("line", pauseMenuState.resumeButton.body:getWorldPoints(pauseMenuState.resumeButton.shape:getPoints()))
+    love.graphics.setColor(0,0,0)
+    local font = love.graphics.newFont((settingsState.resolution + 1) * 12)
+    local resumeText = love.graphics.newText(font, "Resume")
+    local x1, y1 = pauseMenuState.resumeButton.body:getWorldPoints(pauseMenuState.resumeButton.shape:getPoints())
+    drawCenteredText(x1, y1, pauseMenuState.resumeButton.width, pauseMenuState.resumeButton.height, resumeText)
+
+    love.graphics.setColor(.9, .9, .9)
+    love.graphics.polygon("fill", pauseMenuState.settingsButton.body:getWorldPoints(pauseMenuState.settingsButton.shape:getPoints()))
+    love.graphics.setColor(0, 0, 0, 1) -- set color to black for line only
+    love.graphics.setLineWidth(2) -- optional: make the outline more visible
+    love.graphics.polygon("line", pauseMenuState.settingsButton.body:getWorldPoints(pauseMenuState.settingsButton.shape:getPoints()))
+    local settingsText = love.graphics.newText(font, "Settings")
+    x1, y1 = pauseMenuState.settingsButton.body:getWorldPoints(pauseMenuState.settingsButton.shape:getPoints())
+    drawCenteredText(x1, y1, pauseMenuState.settingsButton.width, pauseMenuState.settingsButton.height, settingsText)
+
+    love.graphics.setColor(.9, .9, .9)
+    love.graphics.polygon("fill", pauseMenuState.menuButton.body:getWorldPoints(pauseMenuState.menuButton.shape:getPoints()))
+    love.graphics.setColor(0, 0, 0, 1) -- set color to black for line only
+    love.graphics.setLineWidth(2) -- optional: make the outline more visible
+    love.graphics.polygon("line", pauseMenuState.menuButton.body:getWorldPoints(pauseMenuState.menuButton.shape:getPoints()))
+    local menuText = love.graphics.newText(font, "Exit to Main Menu")
+    x1, y1 = pauseMenuState.menuButton.body:getWorldPoints(pauseMenuState.menuButton.shape:getPoints())
+    drawCenteredText(x1, y1, pauseMenuState.menuButton.width, pauseMenuState.menuButton.height, menuText)
+
     love.graphics.setColor(1, 1, 1, 1) -- reset color to white for text
     love.graphics.setCanvas()
 
@@ -188,6 +252,7 @@ end
 
 function love.update(dt) 
     world:update(dt)
+    mouseX, mouseY = love.mouse.getPosition()
     local action = actionMap[gameState.currentScreen]
     action(dt)
 end
@@ -216,45 +281,49 @@ function updateMainGameState(dt)
     if gameState.prevTargetClicked then createRandomCircle() end
 
     -- Shoot the target boom
-    gameState.mouseDown = love.mouse.isDown(1)
-    if gameState.mouseDown and gameState.mouseReleased then handleClickGame() end
+    mousePressed = love.mouse.isDown(1)
+    if mousePressed and mouseReleased then handleClickGame() end
 
     -- ensure user releases mouse
-    gameState.mouseReleased = not love.mouse.isDown(1)
+    mouseReleased = not love.mouse.isDown(1)
 end
 
 function updateMenuState(dt)
-    mainMenuState.mouseDown = love.mouse.isDown(1)
+    mousePressed = love.mouse.isDown(1)
 
-    if mainMenuState.mouseDown and mainMenuState.mouseReleased then handleClickMenu() end
+    if mousePressed and mouseReleased then handleClickMenu() end
 
-
-    mainMenuState.mouseReleased = not love.mouse.isDown(1)
+    mouseReleased = not love.mouse.isDown(1)
 end
 
 function updateSettingsState(dt)
-    settingsState.mouseDown = love.mouse.isDown(1)
-    if settingsState.mouseDown and settingsState.mouseReleased then handleClickSettings() end
-    settingsState.mouseReleased = not love.mouse.isDown(1)
+    mousePressed = love.mouse.isDown(1)
+    if mousePressed and mouseReleased then handleClickSettings() end
+    mouseReleased = not love.mouse.isDown(1)
+end
+
+function updatePauseState(dt)
+    mousePressed = love.mouse.isDown(1)
+    if mousePressed and mouseReleased then handleClickPause() end
+    mouseReleased = not love.mouse.isDown(1)
 end
 
 --- HANDLE CLICKS AND KEY PRESS ---
 function handleClickMenu()
-    local x, y = love.mouse.getPosition()
-    local isInsideGame = mainMenuState.playGameObject.fixture:testPoint(x, y)
+    local isInsideGame = mainMenuState.playGameObject.fixture:testPoint(mouseX, mouseY)
 
     if isInsideGame then
         gameState.currentCanvas = canvas
         gameState.currentScreen = "game"
     end
 
-    local isInsideSettings = mainMenuState.settingsObject.fixture:testPoint(x, y)
+    local isInsideSettings = mainMenuState.settingsObject.fixture:testPoint(mouseX, mouseY)
     if isInsideSettings then
         gameState.currentCanvas = settingsCanvas
         gameState.currentScreen = "settings"
     end
 
-    local isInsideExit = mainMenuState.exitObject.fixture:testPoint(x, y)
+    local isInsideExit = mainMenuState.exitObject.fixture:testPoint(mouseX, mouseY)
     if isInsideExit then
         love.event.quit(true)
         love.window.close()
@@ -262,8 +331,7 @@ function handleClickMenu()
 end
 
 function handleClickSettings()
-    local x, y = love.mouse.getPosition()
-    local isInsideResolution = settingsState.resolutionObject.fixture:testPoint(x, y)
+    local isInsideResolution = settingsState.resolutionObject.fixture:testPoint(mouseX, mouseY)
 
     if isInsideResolution then
         local res = (settingsState.resolution + 1) % 3
@@ -282,17 +350,38 @@ function handleClickSettings()
 
         setUpMainMenu()
         setUpSettings()
+        setUpPauseMenu()
     end
 
-    local isInsideBack = settingsState.backObject.fixture:testPoint(x,y)
+    local isInsideBack = settingsState.backObject.fixture:testPoint(mouseX,mouseY)
 
     if isInsideBack then
         gameState.currentScreen = "menu"
     end
 end
 
+function handleClickPause()
+    local isResume = pauseMenuState.resumeButton.fixture:testPoint(mouseX, mouseY)
+
+    if isResume then
+        gameState.currentScreen = "game"
+    end
+
+    local isSettings = pauseMenuState.settingsButton.fixture:testPoint(mouseX, mouseY)
+
+    if isSettings then
+        gameState.currentScreen = "settings"
+    end
+
+    local isMenu = pauseMenuState.menuButton.fixture:testPoint(mouseX, mouseY)
+
+    if isMenu then
+        gameState.currentScreen = "menu"
+    end
+end
+
 function handleKeyPress(key)
-    if key == "escape" and gameState.CurrentScreen == "game" then
+    if key == "escape" and gameState.currentScreen == "game" then
         gameState.currentScreen = "pause"
     end
     if key == "q" then
@@ -301,9 +390,8 @@ function handleKeyPress(key)
 end
 
 function handleClickGame()
-    local x, y = love.mouse.getPosition()
     local radius = gameState.currTarget.currShape:getRadius()
-    local isInside = gameState.currTarget.currFixture:testPoint(x, y)
+    local isInside = gameState.currTarget.currFixture:testPoint(mouseX, mouseY)
 
     if isInside then
         gameState.prevTargetClicked = true
